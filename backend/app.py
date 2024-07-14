@@ -7,7 +7,6 @@ from PIL import Image
 from flask_cors import CORS
 from flask import Flask, request, jsonify
 from werkzeug.utils import secure_filename
-import torchvision.transforms.functional as TF
 
 # Load disease and supplement information
 disease_info = pd.read_csv('./disease_info.csv', encoding='cp1252')
@@ -18,11 +17,16 @@ model = CNN.CNN(39)
 model.load_state_dict(torch.load("./plant_disease_model_1_latest.pt"))
 model.eval()
 
-def prediction(image_path):
-    image = Image.open(image_path)
+def preprocess_image(image_path):
+    """Preprocess the image for model prediction."""
+    image = Image.open(image_path).convert('RGB')
     image = image.resize((224, 224))
-    input_data = TF.to_tensor(image)
-    input_data = input_data.view((-1, 3, 224, 224))
+    image_array = np.array(image).astype(np.float32) / 255.0
+    image_tensor = torch.tensor(image_array).permute(2, 0, 1).unsqueeze(0)  # Convert to tensor and add batch dimension
+    return image_tensor
+
+def prediction(image_path):
+    input_data = preprocess_image(image_path)
     output = model(input_data)
     output = output.detach().numpy()
     index = np.argmax(output)
@@ -36,7 +40,6 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limit the upload size to 
 def allowed_file(filename):
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif'}
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
-
 
 @app.route('/submit', methods=['POST'])
 def submit():
@@ -71,6 +74,5 @@ def submit():
     else:
         return jsonify({'error': 'Invalid file type'}), 400
 
-
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8000)

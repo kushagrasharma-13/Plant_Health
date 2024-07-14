@@ -31,14 +31,14 @@ export function ImageBox() {
   }
 
   // React Query hook to fetch data from API
-  const { isLoading, isFetching, error, data, refetch } = useQuery<ResultData>({
+  const { isLoading, error, data, refetch } = useQuery<ResultData>({
     queryKey: ["plantData"],
     enabled: false, // Start disabled until form submission
     queryFn: () => {
       const formData = new FormData();
       formData.append("image", imageFile!);
 
-      return fetch("http://localhost:5000/submit", {
+      return fetch("http://localhost:8000/submit", {
         method: "POST",
         body: formData,
       }).then((res) => {
@@ -93,17 +93,10 @@ export function ImageBox() {
             <div className="relative w-72 mt-4 flex items-center justify-center aspect-square mx-auto border-2 dark:border-white border-black border-dashed rounded-lg">
               {imageURL ? (
                 // Display uploaded image if available
-                // Use standard img element for debugging
                 <img
                   src={imageURL}
                   alt="Uploaded Image"
                   style={{ width: "100%", height: "100%", objectFit: "contain" }}
-                  onError={(e) => {
-                    console.error("Error loading image:", e);
-                  }}
-                  onLoad={() => {
-                    console.log("Image loaded successfully:", imageURL);
-                  }}
                 />
               ) : (
                 // Placeholder UI when no image uploaded
@@ -134,7 +127,6 @@ export function ImageBox() {
             ) : (
               // Button enabled to submit form and detect disease
               <div className="flex flex-col justify-center gap-4 items-center">
-                {/* <p>{imageFile.name} Uploaded!</p> */}
                 <Button type="submit" disabled={isLoading}>
                   {/* Display spinner icon during loading */}
                   {isLoading && (
